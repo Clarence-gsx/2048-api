@@ -1,5 +1,6 @@
 import numpy as np
-
+import h5py
+from keras.models import load_model
 
 class Agent:
     '''Agent Base.'''
@@ -45,4 +46,31 @@ class ExpectiMaxAgent(Agent):
 
     def step(self):
         direction = self.search_func(self.game.board)
+        return direction
+
+class MyAgent(Agent):
+
+    def __init__(self, game, display=None):
+        super().__init__(game, display)
+        self.model = load_model('./game2048/model.h5')
+        
+
+    def one_hot_encoding(self,arr):
+        OUT_SHAPE = (4, 4)
+        CAND = 16
+        map_table = {2 ** i: i for i in range(1, CAND)}
+        map_table[0] = 00
+        result = np.zeros(shape=OUT_SHAPE + (CAND,), dtype=bool)
+        for r in range(OUT_SHAPE[0]):
+            for c in range(OUT_SHAPE[1]):
+                result[r, c, map_table[arr[r, c]]] = 1
+        return result
+
+    def step(self):
+        board = self.game.board
+        #max_element = board.max()
+        enc = self.one_hot_encoding(board)
+        probability = self.model.predict(np.array([enc]))[0]
+        direction=np.argmax(probability)
+        print("direction: ",direction)
         return direction
